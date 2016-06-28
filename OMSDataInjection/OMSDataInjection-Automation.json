@@ -1,0 +1,24 @@
+{
+    "ConnectionFields":  [
+                             {
+                                 "IsEncrypted":  false,
+                                 "IsOptional":  false,
+                                 "Name":  "OMSWorkspaceId",
+                                 "TypeName":  "System.String"
+                             },
+                             {
+                                 "IsEncrypted":  true,
+                                 "IsOptional":  false,
+                                 "Name":  "PrimaryKey",
+                                 "TypeName":  "System.String"
+                             },
+                             {
+                                 "IsEncrypted":  true,
+                                 "IsOptional":  true,
+                                 "Name":  "SecondaryKey",
+                                 "TypeName":  "System.String"
+                             }
+                         ],
+    "ConnectionTypeName":  "OMSWorkSpace",
+    "IntegrationModuleName":  "OMSDataInjection"
+}
