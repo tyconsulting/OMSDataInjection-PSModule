@@ -23,7 +23,7 @@
 			<dev:version/>
 		</command:details>
 		<maml:description>
-			<maml:para>Injecting custom data into Microsoft Operations Management Suite (OMS) Log Analytics using its HTTP Data Injection API.</maml:para>
+			<maml:para>Injecting custom data into Microsoft Operations Management Suite (OMS) Log Analytics using its HTTP Data Collector API.</maml:para>
 		</maml:description>
 		<command:syntax>
 			<!-- Parameter Sets-->

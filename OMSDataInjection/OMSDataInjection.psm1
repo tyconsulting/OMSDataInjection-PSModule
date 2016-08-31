@@ -42,32 +42,32 @@ Function New-OMSDataInjection
     
   )
   
-  Write-Verbose 'Validate JSON format if JSON format string is specified'
+  Write-Verbose -Message 'Validate JSON format if JSON format string is specified'
   If ($PSBoundParameters.ContainsKey('OMSDataJSON'))
   {
     try {
       $OMSDataObject = ConvertFrom-Json -InputObject $OMSDataJSON 
     } Catch {
-      Throw 'The input data is not in valid JSON format. InnerException: $($_.Exception.InnerException)'
+      Throw ('The input data is not in valid JSON format. InnerException: {0}' -f $_.Exception.InnerException)
       Exit -1
     }
   }
-  Write-Verbose 'Valid JSON data provided.'
+  Write-Verbose -Message 'Valid JSON data provided.'
   
-  Write-Verbose 'Validate If the PS object or the JSON input input contains the Time Stamp field'
+  Write-Verbose -Message 'Validate If the PS object or the JSON input input contains the Time Stamp field'
   If ($OMSDataObject.$UTCTimeStampField -eq $null)
   {
     If ($OMSDataJSON -eq $Null)
     {
-      Throw "The input object `$OMSDataObject does not contain a property for the specified Time Stamp Field '$UTCTimeStampField'."
+      Throw ("The input object `$OMSDataObject does not contain a property for the specified Time Stamp Field '{0}'." -f $UTCTimeStampField)
     } else {
-      Throw "The input JSON string `$OMSDataJSON does not contain a property for the specified Time Stamp Field '$UTCTimeStampField'."
+      Throw ("The input JSON string `$OMSDataJSON does not contain a property for the specified Time Stamp Field '{0}'." -f $UTCTimeStampField)
     }
     
     Exit -1
   }
-  Write-Verbose "'$UTCTimeStampField' is contained in the input JSON/PSObject parameter."
-  Write-Verbose "'$UTCTimeStampField' value: '$($OMSDataObject.$UTCTimeStampField)'."
+  Write-Verbose -Message ("'{0}' is contained in the input JSON/PSObject parameter." -f $UTCTimeStampField)
+  Write-Verbose -Message ("'{0}' value: '{1}'." -f $UTCTimeStampField, $OMSDataObject.$UTCTimeStampField)
   If ($OMSDataObject.$UTCTimeStampField.GetType().FullName -ieq 'system.datetime')
   {
     $OMSDataObject.$UTCTimeStampField = $OMSDataObject.$UTCTimeStampField.ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
@@ -78,7 +78,7 @@ Function New-OMSDataInjection
       $timestamp = ([datetime]::Parse($OMSDataObject.$UTCTimeStampField)).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
       $OMSDataObject.$UTCTimeStampField = $timestamp
     } Catch {
-      Throw "The $UTCTimeStampField does not contain valid date time"
+      Throw ('The {0} does not contain valid date time' -f $UTCTimeStampField)
       Exit -1
     }
   }
@@ -161,20 +161,38 @@ Function Publish-OMSData
   }
   If ($SecondaryKey.length -eq 0)
   {
-    $response = Invoke-WebRequest -Uri $uri -Method $method -ContentType $contentType -Headers $PrimaryHeaders -Body $body -UseBasicParsing
+    try {
+      $response = Invoke-WebRequest -Uri $uri -Method $method -ContentType $contentType -Headers $PrimaryHeaders -Body $body -UseBasicParsing
+    } catch {
+      $ErrorMessage = $_.Exception.Message
+    }
+    
   } else {
     #If secondary key specified, will attempt to use if if an exception is thrown with the primary key
     try {
       $response = Invoke-WebRequest -Uri $uri -Method $method -ContentType $contentType -Headers $PrimaryHeaders -Body $body -UseBasicParsing
     } catch {
-      Write-Verbose 'The primary key specified in the HybridWorkerOMS connection object is not valid. Re-trying sending request using the secondary key...'
-      $response = Invoke-WebRequest -Uri $uri -Method $method -ContentType $contentType -Headers $SecondaryHeaders -Body $body -UseBasicParsing
+      if ($_.Exception.Response.StatusCode.Value__ -eq 403)
+      {
+        Write-Verbose -Message 'The primary key specified in the HybridWorkerOMS connection object is not valid. Re-trying sending request using the secondary key...'
+        try {
+          $response = Invoke-WebRequest -Uri $uri -Method $method -ContentType $contentType -Headers $SecondaryHeaders -Body $body -UseBasicParsing
+        } Catch {
+          $ErrorMessage = $_.Exception.Message
+        }
+      } else {
+        $ErrorMessage = $_.Exception.Message
+      }
+      
     }
   } 
-    
+ 
   if ($response.StatusCode -eq 202)
   {
-    Write-Verbose 'OMS data injection accepted!'
+    Write-Verbose -Message 'OMS data injection accepted!'
+  } else {
+    Write-Error $ErrorMessage
   }
 }
+
 #endregion
