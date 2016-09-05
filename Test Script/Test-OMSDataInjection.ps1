@@ -6,6 +6,7 @@ $ISONow = "{0:yyyy-MM-ddThh:mm:ssZ}" -f $now
 #Change the OMSWorkspaceId
 $OMSWorkSpaceId = Read-Host -Prompt 'Enter the workspace Id'
 $PrimaryKey = Read-Host -Prompt 'Enter the primary key'
+$SecondaryKey = Read-Host -Prompt 'Enter the secondary key'
 
 #region Test PS object input
 $ObjProperties = @{
