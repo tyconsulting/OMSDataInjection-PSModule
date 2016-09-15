@@ -18,7 +18,7 @@ $OMSDataObject = New-Object -TypeName PSObject -Property $ObjProperties
 
 #Inject data
 Write-Output "Injecting PSobject data into OMS"
-$InjectData = New-OMSDataInjection -OMSConnection $OMSConnection -LogType $LogName -UTCTimeStampField 'LogTime' -OMSDataObject $OMSDataObject -Verbose
+$InjectData = New-OMSDataInjection -OMSConnection $OMSConnection -LogType $LogName -UTCTimeStampField $UTCTimeStampField -OMSDataObject $OMSDataObject -Verbose
 #endregion
 
 #region test JSON input
@@ -31,5 +31,5 @@ $OMSDataJSON = @"
 }
 "@
 Write-Output "Injecting JSON data into OMS"
-$InjectData = New-OMSDataInjection -OMSConnection $OMSConnection -LogType $LogName -UTCTimeStampField 'LogTime' -OMSDataJSON $OMSDataJSON -verbose
+$InjectData = New-OMSDataInjection -OMSConnection $OMSConnection -LogType $LogName -UTCTimeStampField $UTCTimeStampField -OMSDataJSON $OMSDataJSON -verbose
 #endregion
