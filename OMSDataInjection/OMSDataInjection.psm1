@@ -33,7 +33,7 @@ Function New-OMSDataInjection
     [Parameter(ParameterSetName = 'InjectByPSObjectWithIndividualParameters', Mandatory = $true,HelpMessage = 'Please specify the PSObject containing OMS data')]
     [Parameter(ParameterSetName = 'InjectByPSObjectWithConnection', Mandatory = $true,HelpMessage = 'Please specify the PSObject containing OMS data')]
     [ValidateNotNullOrEmpty()]
-    [PSObject]$OMSDataObject,
+    [PSObject[]]$OMSDataObject,
     
     [Parameter(ParameterSetName = 'InjectByJSONStringWithConnection', Mandatory = $true,HelpMessage = 'Please specify the JSON format string containing OMS data')]
     [Parameter(ParameterSetName = 'InjectByJSONStringWithIndividualParameters', Mandatory = $true,HelpMessage = 'Please specify the JSON format string containing OMS data')]
@@ -42,6 +42,9 @@ Function New-OMSDataInjection
     
   )
   
+  #Maximum HTTP request body size = 30mb
+  $RequestBodyLimitMB = 30
+  $RequestBodyLimitBytes = $RequestBodyLimitMB * 1mb
   Write-Verbose -Message 'Validate JSON format if JSON format string is specified'
   If ($PSBoundParameters.ContainsKey('OMSDataJSON'))
   {
@@ -55,33 +58,38 @@ Function New-OMSDataInjection
   Write-Verbose -Message 'Valid JSON data provided.'
   
   Write-Verbose -Message 'Validate If the PS object or the JSON input input contains the Time Stamp field'
-  If ($OMSDataObject.$UTCTimeStampField -eq $null)
+  For ($i = 0; $i -lt $OMSDataObject.count; $i++)
   {
-    If ($OMSDataJSON -eq $Null)
+    If ($OMSDataObject[$i].$UTCTimeStampField -eq $null)
     {
-      Throw ("The input object `$OMSDataObject does not contain a property for the specified Time Stamp Field '{0}'." -f $UTCTimeStampField)
-    } else {
-      Throw ("The input JSON string `$OMSDataJSON does not contain a property for the specified Time Stamp Field '{0}'." -f $UTCTimeStampField)
-    }
+      If ($OMSDataJSON -eq $Null)
+      {
+        Throw ("The input object `$OMSDataObject does not contain a property for the specified Time Stamp Field '{0}'." -f $UTCTimeStampField)
+      } else {
+        $IndividualJSON = ConvertTO-JSON $OMSDataObject[$i]
+        Throw ("The input JSON string `$IndividualJSON does not contain a property for the specified Time Stamp Field '{0}'." -f $UTCTimeStampField)
+      }
     
-    Exit -1
-  }
-  Write-Verbose -Message ("'{0}' is contained in the input JSON/PSObject parameter." -f $UTCTimeStampField)
-  Write-Verbose -Message ("'{0}' value: '{1}'." -f $UTCTimeStampField, $OMSDataObject.$UTCTimeStampField)
-  If ($OMSDataObject.$UTCTimeStampField.GetType().FullName -ieq 'system.datetime')
-  {
-    $OMSDataObject.$UTCTimeStampField = $OMSDataObject.$UTCTimeStampField.ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
-  } else {
-    #Validate if the Time stamp specified contains a valid datetime value
-    Try 
-    {
-      $timestamp = ([datetime]::Parse($OMSDataObject.$UTCTimeStampField)).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
-      $OMSDataObject.$UTCTimeStampField = $timestamp
-    } Catch {
-      Throw ('The {0} does not contain valid date time' -f $UTCTimeStampField)
       Exit -1
     }
+    #Write-Verbose -Message ("'{0}' is contained in the input JSON/PSObject parameter." -f $UTCTimeStampField)
+    #Write-Verbose -Message ("'{0}' value: '{1}'." -f $UTCTimeStampField, $OMSDataObject[$i].$UTCTimeStampField)
+    If ($OMSDataObject[$i].$UTCTimeStampField.GetType().FullName -ieq 'system.datetime')
+    {
+      $OMSDataObject[$i].$UTCTimeStampField = $OMSDataObject[$i].$UTCTimeStampField.ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+    } else {
+      #Validate if the Time stamp specified contains a valid datetime value
+      Try 
+      {
+        $timestamp = ([datetime]::Parse($OMSDataObject[$i].$UTCTimeStampField)).ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+        $OMSDataObject[$i].$UTCTimeStampField = $timestamp
+      } Catch {
+        Throw ('The {0} does not contain valid date time' -f $UTCTimeStampField)
+        Exit -1
+      }
+    }
   }
+  
 
   #Inject activity into OMS
   If ($PSBoundParameters.ContainsKey('OMSWorkSpaceId'))
@@ -94,6 +102,15 @@ Function New-OMSDataInjection
   }
   
   $OMSLogBody = ConvertTo-Json -InputObject $OMSDataObject
+
+  #Check request body size before injecting
+  $RequestBodySize = [System.Text.ASCIIEncoding]::UTF8.GetByteCount($OMSLogBody)
+  If ($RequestBodySize -gt $RequestBodyLimitBytes)
+  {
+    Throw "The request body is too big. Maximum size is 30 MB, current size: $($RequestBodySize/1mb) MB. Please split logs into multiple smaller chunks."
+    Exit -1
+  }
+  Write-Verbose "HTTP POST request body size: $RequestBodySize bytes."
   $LogType = $LogType
   Publish-OMSData -OMSConnection $OMSConnection -body $OMSLogBody -LogType $LogType
 }
@@ -186,13 +203,16 @@ Function Publish-OMSData
       
     }
   } 
- 
+  
   if ($response.StatusCode -eq 202)
   {
     Write-Verbose -Message 'OMS data injection accepted!'
+    $InjectSuccessful = $true
   } else {
     Write-Error $ErrorMessage
+    $InjectSuccessful = $false
   }
+  $InjectSuccessful
 }
 
 #endregion
