@@ -204,12 +204,12 @@ Function Publish-OMSData
     }
   } 
   
-  if ($response.StatusCode -eq 202)
+  if ($response.StatusCode -in 200,202)
   {
     Write-Verbose -Message 'OMS data injection accepted!'
     $InjectSuccessful = $true
   } else {
-    Write-Error $ErrorMessage
+    Write-Error "API returned status code [$($response.StatusCode)]"
     $InjectSuccessful = $false
   }
   $InjectSuccessful
