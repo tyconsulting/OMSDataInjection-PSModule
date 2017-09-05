@@ -57,7 +57,7 @@ Function New-OMSDataInjection
   }
 
   Write-Verbose -Message 'Valid JSON data provided.'
-  If ($PSBoundParameters.ContainsKey($UTCTimeStampField))
+  If ($PSBoundParameters.ContainsKey('UTCTimeStampField'))
   {
     Write-Verbose -Message 'Validate If the PS object or the JSON input input contains the Time Stamp field'
     For ($i = 0; $i -lt $OMSDataObject.count; $i++)
