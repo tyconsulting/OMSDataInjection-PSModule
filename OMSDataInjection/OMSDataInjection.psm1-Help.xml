@@ -60,6 +60,14 @@
 					<command:parameterValue required="true" variableLength="false">String</command:parameterValue>
 					<dev:defaultValue/>
 				</command:parameter>
+				<command:parameter required="true" variableLength="false" globbing="false" pipelineInput="false" position="named" aliases="">
+					<maml:name>AzureResourceId</maml:name>
+					<maml:description>
+						<maml:para>Assign an Azure Resource Id to the log</maml:para>
+					</maml:description>
+					<command:parameterValue required="false" variableLength="false">String</command:parameterValue>
+					<dev:defaultValue/>
+				</command:parameter>
 			</command:syntaxItem>
 			<command:syntaxItem>
 				<maml:name>New-OMSDataInjection</maml:name>
@@ -93,6 +101,14 @@
 						<maml:para>a PSObject that contains data to be injected in OMS</maml:para>
 					</maml:description>
 					<command:parameterValue required="true" variableLength="false">PSObject</command:parameterValue>
+					<dev:defaultValue/>
+				</command:parameter>
+				<command:parameter required="true" variableLength="false" globbing="false" pipelineInput="false" position="named" aliases="">
+					<maml:name>AzureResourceId</maml:name>
+					<maml:description>
+						<maml:para>Assign an Azure Resource Id to the log</maml:para>
+					</maml:description>
+					<command:parameterValue required="false" variableLength="false">String</command:parameterValue>
 					<dev:defaultValue/>
 				</command:parameter>
 			</command:syntaxItem>
@@ -146,6 +162,14 @@
 					<command:parameterValue required="true" variableLength="false">String</command:parameterValue>
 					<dev:defaultValue/>
 				</command:parameter>
+				<command:parameter required="true" variableLength="false" globbing="false" pipelineInput="false" position="named" aliases="">
+					<maml:name>AzureResourceId</maml:name>
+					<maml:description>
+						<maml:para>Assign an Azure Resource Id to the log</maml:para>
+					</maml:description>
+					<command:parameterValue required="false" variableLength="false">String</command:parameterValue>
+					<dev:defaultValue/>
+				</command:parameter>
 			</command:syntaxItem>
 			<command:syntaxItem>
 				<maml:name>New-OMSDataInjection</maml:name>
@@ -195,6 +219,14 @@
 						<maml:para>a PSObject that contains data to be injected in OMS</maml:para>
 					</maml:description>
 					<command:parameterValue required="true" variableLength="false">PSObject</command:parameterValue>
+					<dev:defaultValue/>
+				</command:parameter>
+				<command:parameter required="true" variableLength="false" globbing="false" pipelineInput="false" position="named" aliases="">
+					<maml:name>AzureResourceId</maml:name>
+					<maml:description>
+						<maml:para>Assign an Azure Resource Id to the log</maml:para>
+					</maml:description>
+					<command:parameterValue required="false" variableLength="false">String</command:parameterValue>
 					<dev:defaultValue/>
 				</command:parameter>
 			</command:syntaxItem>
@@ -257,6 +289,18 @@
 				<command:parameterValue required="true" variableLength="false">PSObject</command:parameterValue>
 				<dev:type>
 					<maml:name>PSObject</maml:name>
+					<maml:uri/>
+				</dev:type>
+				<dev:defaultValue/>
+			</command:parameter>
+			<command:parameter required="false" variableLength="false" globbing="false" pipelineInput="false" position="named" aliases="">
+				<maml:name>AzureResourceId</maml:name>
+				<maml:description>
+					<maml:para>Assign an Azure Resource Id to the log</maml:para>
+				</maml:description>
+				<command:parameterValue required="false" variableLength="false">String</command:parameterValue>
+				<dev:type>
+					<maml:name>String</maml:name>
 					<maml:uri/>
 				</dev:type>
 				<dev:defaultValue/>
@@ -340,7 +384,7 @@ $ObjProperties = @{
 $OMSDataObject = New-Object -TypeName PSObject -Property $ObjProperties
 $InjectData = New-OMSDataInjection -OMSWorkSpaceId &apos;8fb61d08-12ac-400a-a45b-0e607994779f&apos; -PrimaryKey $PrimaryKey -LogType &apos;OMSTestData&apos; -UTCTimeStampField &apos;LogTime&apos; -OMSDataObject $OMSDataObject</dev:code>
 				<dev:remarks>
-					<maml:para>Injecting data using a PS object by specifying the OMS workspace Id and primary key</maml:para>
+					<maml:para>Injecting data using a PS object by specifying the OMS workspace Id, primary key and optional Azure Resource Id</maml:para>
 				</dev:remarks>
 			</command:example>
 			<command:example>
@@ -357,7 +401,8 @@ $OMSDataJSON = @&quot;
     &quot;Computer&quot;:  &quot;SERVER01&quot;
 }
 &quot;@
-$InjectData = New-OMSDataInjection -OMSConnection $OMSConnection -LogType &apos;OMSTestData&apos; -UTCTimeStampField &apos;LogTime&apos; -OMSDataJSON $OMSDataJSON</dev:code>
+$AzureResourceId = "/subscriptions/d9bc9c7e-502b-4ce8-acac-7d43fcc93cd1/resourceGroups/rg-test/providers/Microsoft.Compute/virtualMachines/vm-test-01"
+$InjectData = New-OMSDataInjection -OMSConnection $OMSConnection -LogType &apos;OMSTestData&apos; -UTCTimeStampField &apos;LogTime&apos; -OMSDataJSON $OMSDataJSON -AzureResourceId $AzureResourceId</dev:code>
 				<dev:remarks>
 					<maml:para>Injecting data using JSON formatted string by specifying the OMSWorkspace Azure Automation / SMA connection object (to be used in a runbook)</maml:para>
 				</dev:remarks>

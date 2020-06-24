@@ -2,27 +2,27 @@
 Function New-OMSDataInjection
 {
   Param(
-    [Parameter(ParameterSetName = 'InjectByPSObjectWithConnection', Mandatory = $true,HelpMessage = 'Please specify the OMSWorkSpace Azure Automation Connection object')]
-    [Parameter(ParameterSetName = 'InjectByJSONStringWithConnection', Mandatory = $true,HelpMessage = 'Please specify the OMSWorkSpace Azure Automation Connection object')]
+    [Parameter(ParameterSetName = 'InjectByPSObjectWithConnection', Mandatory = $true,HelpMessage = 'Please specify the Log Analytics Workspace Azure Automation Connection object')]
+    [Parameter(ParameterSetName = 'InjectByJSONStringWithConnection', Mandatory = $true,HelpMessage = 'Please specify the Log Analytics Workspace Azure Automation Connection object')]
     [ValidateNotNullOrEmpty()]
     [Alias('Connection','c')][Object]$OMSConnection,
     
-    [Parameter(ParameterSetName = 'InjectByPSObjectWithIndividualParameters', Position = 0, Mandatory = $true,HelpMessage = 'Please specify the OMS Workspace Id')]
-    [Parameter(ParameterSetName = 'InjectByJSONStringWithIndividualParameters', Position = 0, Mandatory = $true,HelpMessage = 'Please specify the OMS Workspace Id')]
+    [Parameter(ParameterSetName = 'InjectByPSObjectWithIndividualParameters', Position = 0, Mandatory = $true,HelpMessage = 'Please specify the Log Analytics Workspace Id')]
+    [Parameter(ParameterSetName = 'InjectByJSONStringWithIndividualParameters', Position = 0, Mandatory = $true,HelpMessage = 'Please specify the Log Analytics Workspace Id')]
     [ValidateNotNullOrEmpty()]
-    [Alias('WorkSpaceId')][String]$OMSWorkSpaceId,
+    [Alias('WorkSpaceId')][String]$OMSWorkspaceId,
     
-    [Parameter(ParameterSetName = 'InjectByPSObjectWithIndividualParameters', Mandatory = $true,HelpMessage = 'Please specify the OMS Primary Key')]
-    [Parameter(ParameterSetName = 'InjectByJSONStringWithIndividualParameters', Mandatory = $true,HelpMessage = 'Please specify the OMS Primary Key')]
+    [Parameter(ParameterSetName = 'InjectByPSObjectWithIndividualParameters', Mandatory = $true,HelpMessage = 'Please specify the Log Analytics Primary Key')]
+    [Parameter(ParameterSetName = 'InjectByJSONStringWithIndividualParameters', Mandatory = $true,HelpMessage = 'Please specify the Log Analytics Primary Key')]
     [ValidateNotNullOrEmpty()]
     [String]$PrimaryKey,
     
-    [Parameter(ParameterSetName = 'InjectByPSObjectWithIndividualParameters', Mandatory = $false,HelpMessage = 'Please specify the OMS Secondary Key')]
-    [Parameter(ParameterSetName = 'InjectByJSONStringWithIndividualParameters', Mandatory = $false,HelpMessage = 'Please specify the OMS Secondary Key')]
+    [Parameter(ParameterSetName = 'InjectByPSObjectWithIndividualParameters', Mandatory = $false,HelpMessage = 'Please specify the Log Analytics Secondary Key')]
+    [Parameter(ParameterSetName = 'InjectByJSONStringWithIndividualParameters', Mandatory = $false,HelpMessage = 'Please specify the Log Analytics Secondary Key')]
     [ValidateNotNullOrEmpty()]
     [String]$SecondaryKey,
     
-    [Parameter(Mandatory = $true,HelpMessage = 'Please specify the OMS log type')]
+    [Parameter(Mandatory = $true,HelpMessage = 'Please specify the Log Analytics log type')]
     [ValidateNotNullOrEmpty()]
     [String]$LogType,
     
@@ -30,16 +30,19 @@ Function New-OMSDataInjection
     [ValidateNotNullOrEmpty()]
     [Alias('TimeStampField')][String]$UTCTimeStampField,
     
-    [Parameter(ParameterSetName = 'InjectByPSObjectWithIndividualParameters', Mandatory = $true,HelpMessage = 'Please specify the PSObject containing OMS data')]
-    [Parameter(ParameterSetName = 'InjectByPSObjectWithConnection', Mandatory = $true,HelpMessage = 'Please specify the PSObject containing OMS data')]
+    [Parameter(ParameterSetName = 'InjectByPSObjectWithIndividualParameters', Mandatory = $true,HelpMessage = 'Please specify the PSObject containing Log Analytics data')]
+    [Parameter(ParameterSetName = 'InjectByPSObjectWithConnection', Mandatory = $true,HelpMessage = 'Please specify the PSObject containing Log Analytics data')]
     [ValidateNotNullOrEmpty()]
     [PSObject[]]$OMSDataObject,
     
-    [Parameter(ParameterSetName = 'InjectByJSONStringWithConnection', Mandatory = $true,HelpMessage = 'Please specify the JSON format string containing OMS data')]
-    [Parameter(ParameterSetName = 'InjectByJSONStringWithIndividualParameters', Mandatory = $true,HelpMessage = 'Please specify the JSON format string containing OMS data')]
+    [Parameter(ParameterSetName = 'InjectByJSONStringWithConnection', Mandatory = $true,HelpMessage = 'Please specify the JSON format string containing Log Analytics data')]
+    [Parameter(ParameterSetName = 'InjectByJSONStringWithIndividualParameters', Mandatory = $true,HelpMessage = 'Please specify the JSON format string containing Log Analytics data')]
     [ValidateNotNullOrEmpty()]
-    [String]$OMSDataJSON
-    
+    [String]$OMSDataJSON,
+  
+    [Parameter(Mandatory = $false,HelpMessage = 'Assign an Azure Resource Id to the log')]
+    [ValidateNotNullOrEmpty()]
+    [String]$AzureResourceId
   )
   
   #Maximum HTTP request body size = 30mb
@@ -78,14 +81,14 @@ Function New-OMSDataInjection
       }
     }
   } else {
-    Write-Verbose "The UTC Time Stamp Field not specified. The TimeGenerated field in the OMS log will use the time when the message is injected."
+    Write-Verbose "The UTC Time Stamp Field not specified. The TimeGenerated field in the log will use the time when the message is injected."
   }
 
   #Inject activity into OMS
-  If ($PSBoundParameters.ContainsKey('OMSWorkSpaceId'))
+  If ($PSBoundParameters.ContainsKey('OMSWorkspaceId'))
   {
     $OMSConnection = @{
-      'OMSWorkspaceId' = $OMSWorkSpaceId
+      'OMSWorkspaceId' = $OMSWorkspaceId
       'PrimaryKey' = $PrimaryKey
       'SecondaryKey' = $SecondaryKey
     }
@@ -102,7 +105,18 @@ Function New-OMSDataInjection
   }
   Write-Verbose "HTTP POST request body size: $RequestBodySize bytes."
   $LogType = $LogType
-  Publish-OMSData -OMSConnection $OMSConnection -body $OMSLogBody -LogType $LogType -TimeStampField $UTCTimeStampField
+  $param = @{
+    'OMSConnection' = $OMSConnection
+    'body' = $OMSLogBody
+    'LogType' = $LogType
+    'TimeStampField' = $UTCTimeStampField
+  }
+  if ($PSBoundParameters.ContainsKey('AzureResourceId'))
+  {
+    Write-Verbose "Adding header 'x-ms-AzureResourceId': '$AzureResourceId'"
+    $param.Add('AzureResourceId', $AzureResourceId)
+  }
+  Publish-OMSData @param
 }
 
 #region private functions
@@ -135,6 +149,7 @@ Function Publish-OMSData
   Param (
     [Object]$OMSConnection,
     [string]$body,
+    [string]$AzureResourceId,
     [string]$LogType,
     [string]$TimeStampField
   )
@@ -155,6 +170,10 @@ Function Publish-OMSData
     'x-ms-date'          = $rfc1123date
     'time-generated-field' = $TimeStampField
   }
+  if ($PSBoundParameters.ContainsKey('AzureResourceId'))
+  {
+    $PrimaryHeaders.Add('x-ms-AzureResourceId', $AzureResourceId)
+  }
   If ($SecondaryKey.length -ne 0)
   {
       $SecondarySignature = New-Signature -OMSWorkspaceId $OMSWorkspaceId -sharedKey $PrimaryKey -rfc1123date $rfc1123date -contentLength $contentLength -method $method -contentType $contentType -resource $resource
@@ -163,6 +182,10 @@ Function Publish-OMSData
         'Log-Type'           = $LogType
         'x-ms-date'          = $rfc1123date
         'time-generated-field' = $TimeStampField
+      }
+      if ($PSBoundParameters.ContainsKey('AzureResourceId'))
+      {
+        $SecondaryHeaders.Add('x-ms-AzureResourceId', $AzureResourceId)
       }
   }
   If ($SecondaryKey.length -eq 0)
@@ -195,7 +218,7 @@ Function Publish-OMSData
   
   if ($response.StatusCode -ge 200 -and $response.StatusCode -le 299)
   {
-    Write-Verbose -Message 'OMS data injection accepted!'
+    Write-Verbose -Message 'Log Analytics data injection accepted!'
     $InjectSuccessful = $true
   } else {
     Write-Error $ErrorMessage
