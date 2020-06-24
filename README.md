@@ -23,7 +23,7 @@ Injecting data using JSON formatted string by specifying the OMSWorkspace Azure 
 
 ## Update History
 
-###V ersion 1.3.0
+### Version 1.3.0
 
 * Added support for adding Azure Resource Id to the log entry
 
